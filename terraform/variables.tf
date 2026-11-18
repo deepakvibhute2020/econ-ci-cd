@@ -28,7 +28,7 @@ variable "node_instance_types" {
   description = "Ordered EC2 instance-type choices for EKS managed node groups."
   type        = list(string)
   # Same architecture and size class; fallback can help when one type is constrained.
-  default     = ["t3.medium", "t3a.medium"]
+  default = ["t3.medium", "t3a.medium"]
 }
 
 variable "node_disk_size" {
