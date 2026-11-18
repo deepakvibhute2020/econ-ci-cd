@@ -39,7 +39,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
       - name: Format check
-        run: terraform fmt -check -recursive
+        run: terraform fmt -check -recursive -diff
       - name: Init
         run: terraform init -input=false
       - name: Validate
