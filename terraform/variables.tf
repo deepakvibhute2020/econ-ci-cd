@@ -24,9 +24,11 @@ variable "vpc_cidr" {
   default = "10.40.0.0/16"
 }
 
-variable "node_instance_type" {
-  type    = string
-  default = "t3.medium"
+variable "node_instance_types" {
+  description = "Ordered EC2 instance-type choices for EKS managed node groups."
+  type        = list(string)
+  # Same architecture and size class; fallback can help when one type is constrained.
+  default     = ["t3.medium", "t3a.medium"]
 }
 
 variable "node_disk_size" {
@@ -51,5 +53,10 @@ variable "node_max_size" {
 
 variable "github_actions_role_arn" {
   description = "IAM role ARN assumed by GitHub Actions; granted EKS cluster-admin access in this starter configuration."
+  type        = string
+}
+
+variable "terraform_admin_arn" {
+  description = "IAM principal ARN for the local Terraform administrator"
   type        = string
 }
