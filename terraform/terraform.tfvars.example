@@ -8,4 +8,4 @@ node_disk_size          = 30
 node_min_size           = 1
 node_desired_size       = 1
 node_max_size           = 2
-github_actions_role_arn = "arn:aws:iam::123456789012:role/github-actions-econ-terraform"
+github_actions_role_arn = "arn:aws:iam::574246332137:role/econ-github-terraform-role"
