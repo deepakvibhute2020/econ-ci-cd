@@ -4,11 +4,11 @@ module "eks" {
 
   name               = var.cluster_name
   kubernetes_version = var.kubernetes_version
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
+  vpc_id             = module.vpc.vpc_id
+  subnet_ids         = module.vpc.private_subnets
 
-  endpoint_public_access  = true
-  endpoint_private_access = true
+  endpoint_public_access                   = true
+  endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
 
   access_entries = {
@@ -16,7 +16,7 @@ module "eks" {
       principal_arn = var.github_actions_role_arn
       policy_associations = {
         cluster_admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = { type = "cluster" }
         }
       }
@@ -37,7 +37,7 @@ module "eks" {
       desired_size   = var.node_desired_size
       max_size       = var.node_max_size
       disk_size      = var.node_disk_size
-      labels = { workload = "ecom-gateway-service" }
+      labels         = { workload = "ecom-gateway-service" }
     }
     ecom_masterdata = {
       name           = "ecom-masterdata-ng"
@@ -46,7 +46,7 @@ module "eks" {
       desired_size   = var.node_desired_size
       max_size       = var.node_max_size
       disk_size      = var.node_disk_size
-      labels = { workload = "ecom-masterdata-service" }
+      labels         = { workload = "ecom-masterdata-service" }
     }
     ecom_userauth = {
       name           = "ecom-userauth-ng"
@@ -55,7 +55,7 @@ module "eks" {
       desired_size   = var.node_desired_size
       max_size       = var.node_max_size
       disk_size      = var.node_disk_size
-      labels = { workload = "ecom-userauth-service" }
+      labels         = { workload = "ecom-userauth-service" }
     }
   }
 
