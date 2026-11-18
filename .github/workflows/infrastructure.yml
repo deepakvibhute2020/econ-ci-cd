@@ -1,4 +1,5 @@
 name: ECON-commerce AWS Infrastructure
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,26 +7,43 @@ on:
         description: "Terraform operation"
         required: true
         type: choice
-        options: [plan, apply, destroy]
+        options:
+          - plan
+          - apply
+          - destroy
+
 permissions:
   id-token: write
   contents: read
+
 concurrency:
   group: econ-test-terraform-state
   cancel-in-progress: false
+
+# --------------------------------------------------
+# JOB 1: Normal Terraform Plan / Apply
+# --------------------------------------------------
+
 jobs:
   terraform:
+    if: ${{ inputs.action != 'destroy' }}
+
     runs-on: ubuntu-latest
+
     environment:
-      name: ${{ inputs.action == 'destroy' && 'terraform-destroy' || 'test-env' }}
+      name: test-env
+
     env:
       TF_VAR_github_actions_role_arn: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+
     defaults:
       run:
         working-directory: terraform
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,26 +51,128 @@ jobs:
           aws-region: ap-south-1
 
       - name: Verify AWS Authentication
-        run: |
-          aws sts get-caller-identity
+        run: aws sts get-caller-identity
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
       - name: Format check
         run: terraform fmt -check -recursive -diff
+
       - name: Init
         run: terraform init -input=false
+
       - name: Validate
         run: terraform validate
+
       - name: Plan
         if: ${{ inputs.action == 'plan' || inputs.action == 'apply' }}
         run: terraform plan -input=false -out=tfplan
+
       - name: Apply
         if: ${{ inputs.action == 'apply' }}
         run: terraform apply -input=false -auto-approve tfplan
-      - name: Destroy plan
-        if: ${{ inputs.action == 'destroy' }}
+
+
+# --------------------------------------------------
+# JOB 2: Generate Terraform Destroy Plan
+# No manual approval required here
+# --------------------------------------------------
+
+  destroy-plan:
+    if: ${{ inputs.action == 'destroy' }}
+
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_github_actions_role_arn: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Verify AWS Authentication
+        run: aws sts get-caller-identity
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Format check
+        run: terraform fmt -check -recursive -diff
+
+      - name: Init
+        run: terraform init -input=false
+
+      - name: Validate
+        run: terraform validate
+
+      - name: Generate Destroy Plan
         run: terraform plan -destroy -input=false -out=tfplan
-      - name: Destroy
-        if: ${{ inputs.action == 'destroy' }}
+
+      - name: Upload Destroy Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-destroy-plan
+          path: terraform/tfplan
+          retention-days: 1
+          if-no-files-found: error
+
+
+# --------------------------------------------------
+# JOB 3: Execute Destroy After Manual Approval
+# --------------------------------------------------
+
+  destroy-apply:
+    if: ${{ inputs.action == 'destroy' }}
+
+    needs: destroy-plan
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: terraform-destroy
+
+    env:
+      TF_VAR_github_actions_role_arn: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Verify AWS Authentication
+        run: aws sts get-caller-identity
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Init
+        run: terraform init -input=false
+
+      - name: Download Destroy Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-destroy-plan
+          path: terraform
+
+      - name: Execute Destroy
         run: terraform apply -input=false -auto-approve tfplan
