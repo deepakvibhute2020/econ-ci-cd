@@ -63,7 +63,7 @@ module "eks" {
   }
 
   eks_managed_node_groups = {
-    ecom_gateway = {
+    ecom_gateway_eks = {
       name            = "ecom-gateway-ng"
       use_name_prefix = false
 
@@ -92,7 +92,7 @@ module "eks" {
       }
     }
 
-    ecom_masterdata = {
+    ecom_masterdata_eks = {
       name            = "ecom-masterdata-ng"
       use_name_prefix = false
 
@@ -121,7 +121,7 @@ module "eks" {
       }
     }
 
-    ecom_userauth = {
+    ecom_userauth_eks = {
       name            = "ecom-userauth-ng"
       use_name_prefix = false
 
