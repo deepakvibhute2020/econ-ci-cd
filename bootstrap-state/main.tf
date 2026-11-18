@@ -10,10 +10,10 @@ terraform {
 provider "aws" { region = "ap-south-1" }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "econ-terraform-state"
+  bucket = "econ-terraform-state-rvin"
   lifecycle { prevent_destroy = true }
   tags = {
-    Name        = "econ-terraform-state"
+    Name        = "econ-terraform-state-rvin"
     Environment = "shared"
     ManagedBy   = "Terraform-bootstrap"
   }
@@ -30,7 +30,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
   }
 }
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+  bucket                  = aws_s3_bucket.terraform_state.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
