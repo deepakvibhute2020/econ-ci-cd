@@ -1,0 +1,53 @@
+name: ECON-commerce AWS Infrastructure
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform operation"
+        required: true
+        type: choice
+        options: [plan, apply, destroy]
+permissions:
+  id-token: write
+  contents: read
+concurrency:
+  group: econ-test-terraform-state
+  cancel-in-progress: false
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.action == 'destroy' && 'terraform-destroy' || 'test-env' }}
+    env:
+      TF_VAR_github_actions_role_arn: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ap-south-1
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Format check
+        run: terraform fmt -check -recursive
+      - name: Init
+        run: terraform init -input=false
+      - name: Validate
+        run: terraform validate
+      - name: Plan
+        if: ${{ inputs.action == 'plan' || inputs.action == 'apply' }}
+        run: terraform plan -input=false -out=tfplan
+      - name: Apply
+        if: ${{ inputs.action == 'apply' }}
+        run: terraform apply -input=false -auto-approve tfplan
+      - name: Destroy plan
+        if: ${{ inputs.action == 'destroy' }}
+        run: terraform plan -destroy -input=false -out=tfplan
+      - name: Destroy
+        if: ${{ inputs.action == 'destroy' }}
+        run: terraform apply -input=false -auto-approve tfplan
